@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 using Newtonsoft.Json.Serialization;
+using shopee_sv.DBContext;
 using shopee_sv.Interfaces;
 using shopee_sv.Services;
 
@@ -43,6 +43,39 @@ builder.Services.AddCors(options =>
             });
         });
 
+
+
+//------------------------DB Connection------------------------------
+
+// 1. Read base connection string (without database)
+string baseConn = builder.Configuration.GetConnectionString("MariaDb")!;
+
+Console.WriteLine(baseConn);
+
+// 2. Define database name
+string dbName = "ShopeeDB";
+
+// 3. Create database if missing
+using (var connection = new MySqlConnection(baseConn))
+{
+    connection.Open();
+
+    using var cmd = new MySqlCommand(
+        $"CREATE DATABASE IF NOT EXISTS `{dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+        connection);
+
+    cmd.ExecuteNonQuery();
+}
+
+// 4. Build final connection string INCLUDING the database
+string finalConn = $"{baseConn}Database={dbName};";
+
+// 5. Register EF Core DbContext
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseMySql(finalConn, ServerVersion.AutoDetect(finalConn));
+});
+
 builder.Services.AddScoped<IForwardRequest , ForwardRequest>();
 var app = builder.Build();
 
@@ -52,7 +85,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 
 app.UseCors("shopee-sv-cors");
 
