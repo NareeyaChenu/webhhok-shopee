@@ -1,3 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Newtonsoft.Json.Serialization;
 using shopee_sv.Interfaces;
 using shopee_sv.Services;
 
@@ -11,6 +15,33 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
+// ------------------------- MVC / JSON / Validation ------------------
+builder.Services.AddControllers()
+      // configure controller to use Newtonsoft as a default serializer
+      .AddNewtonsoftJson(options =>
+            options.SerializerSettings.ReferenceLoopHandling = Newtonsoft
+                .Json.ReferenceLoopHandling.Ignore)
+                    .AddNewtonsoftJson(options => options.SerializerSettings.ContractResolver
+                        = new DefaultContractResolver()
+        );
+builder.Services.AddControllersWithViews()
+        .AddJsonOptions(options =>
+          {
+              options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+              options.JsonSerializerOptions.PropertyNamingPolicy = null;
+          });
+
+
+// ------------------------- CORS  ----------------------------
+builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("shopee-sv-cors", build =>
+            {
+                build.WithOrigins("*")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            });
+        });
 
 builder.Services.AddScoped<IForwardRequest , ForwardRequest>();
 var app = builder.Build();
@@ -22,7 +53,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+
+app.UseCors("shopee-sv-cors");
+
+// app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
