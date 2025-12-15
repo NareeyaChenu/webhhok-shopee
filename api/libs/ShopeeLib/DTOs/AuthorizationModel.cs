@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
-namespace shopee_sv.DTOs
+namespace ShopeeLib.DTOs
 {
     public class AuthorizationModel
     {

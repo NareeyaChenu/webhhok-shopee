@@ -3,6 +3,7 @@ import Authorize from "./pages/Authorize";
 import ConnectSuccess from "./pages/ConnectSuccess"
 import ShopeeCallback from "./pages/ShopeeCallback"
 import Home from "./pages/Home"
+import Shop  from "./pages/Shop";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/connect" element={<Authorize />} />
         <Route path="/connect-success" element={<ConnectSuccess />} />
         <Route path="/shopee/callback" element={<ShopeeCallback />} />
+         <Route path="/shop" element={<Shop />} />
       </Routes>
     </BrowserRouter>
   );

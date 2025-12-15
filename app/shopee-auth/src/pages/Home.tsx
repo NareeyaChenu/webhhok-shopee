@@ -21,7 +21,7 @@ export default function Home() {
         <h2 style={{ marginLeft: 20 }}>Menu</h2>
 
         <button
-          onClick={() => navigate("/connect")}
+          onClick={() => navigate("/shop")}
           style={{
             padding: "12px 20px",
             textAlign: "left",

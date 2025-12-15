@@ -1,56 +1,96 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 using shopee_sv.Interfaces;
+using ShopeeLib.DTOs;
+using ShopeeLib.Services;
 
 namespace shopee_sv.Services
 {
     public class ForwardRequest : IForwardRequest
     {
-        public async Task GetDetailAsync(string orderId, string shopId)
+        private readonly string PartnerId = "1110154";
+        private readonly string PartnerKey = "shpk7a4a5668575672465072434344636379514d756b5654615a484f49637643";
+        private static readonly string BaseURL = "https://openplatform.sandbox.test-stable.shopee.sg";
+        public ForwardRequest()
         {
-
-            string baseURL = "https://openplatform.sandbox.test-stable.shopee.sg";
-            string path = "api/v2/order/get_order_detail";
-
-            string accessToken = "";
-            int partnerId = 0;
-
-            string partnerKey = "";
-
-            long shopIdLong = long.Parse(shopId);
-
-
-            // long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-            string signKey = CalculateHash(timestamp, partnerId, shopIdLong, path, partnerKey, accessToken);
-            string fullURL = $"{baseURL}/{path}?access_token={accessToken}&order_sn_list={orderId}&partner_id={partnerId}&request_order_status_pending=true&response_optional_fields=total_amount&shop_id={shopId}&sign={signKey}&timestamp={timestamp}";
-            var client = new HttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Get, fullURL);
-            var response = await client.SendAsync(request);
-
-            Console.WriteLine(await response.Content.ReadAsStringAsync());
 
         }
 
-
-        public static string CalculateHash(long timestamp, int partnerId, long shopId, string apiPath, string partnerKey, string accessToken)
+        public async Task<TokenResponseModel> GetAccessTokenAsync(ShopeeTokenRequest model)
         {
-            // Build base string: {partner_id}{path}{timestamp}
-            string baseString = $"{partnerId}/{apiPath}{timestamp}{accessToken}{shopId}";
+            long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string path = "/api/v2/auth/token/get";
 
-            Console.WriteLine(baseString);
+            string baseString = $"{PartnerId}{path}{timestamp}";
+            string sign = SignatureHelper.GenerateSignKey(baseString, PartnerKey);
 
-            using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(partnerKey)))
+            string url =
+                $"{BaseURL}/{path}" +
+                $"?partner_id={PartnerId}" +
+                $"&timestamp={timestamp}" +
+                $"&sign={sign}";
+
+            var payload = new
             {
-                byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(baseString));
+                partner_id = int.Parse(PartnerId),
+                code = model.Code,
+                shop_id = model.ShopId,
+            };
 
-                string sign = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-                Console.WriteLine(sign);
-                return sign;
-            }
+            using var client = new HttpClient();
+            var res = await client.PostAsJsonAsync(url, payload);
+            var json = await res.Content.ReadAsStringAsync();
 
+            if (!res.IsSuccessStatusCode)
+                throw new Exception($"success: false, message: {json}");
+
+
+
+            // Save token to DB (optional)
+            // TODO: deserialize Shopee token response here
+
+            var tokenModel = JsonConvert.DeserializeObject<TokenResponseModel>(json);
+
+            return tokenModel!;
+        }
+
+        public async Task GetDetailAsync(string orderId, string shopId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<ShopResponseModel> GetShopInfoAsync(string shopId, string accessToken)
+        {
+            long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string path = "/api/v2/shop/get_shop_info";
+
+            string baseString = $"{PartnerId}{path}{timestamp}{accessToken}{shopId}";
+
+
+            string sign = SignatureHelper.GenerateSignKey(baseString, PartnerKey);
+
+            string url =
+                $"{BaseURL}/{path}" +
+                $"?partner_id={PartnerId}" +
+                $"&timestamp={timestamp}" +
+                $"&sign={sign}" +
+                $"&shop_id={shopId}" +
+                $"&access_token={accessToken}";
+
+
+            using var client = new HttpClient();
+            var res = await client.GetAsync(url);
+            var json = await res.Content.ReadAsStringAsync();
+
+            if (!res.IsSuccessStatusCode)
+                throw new Exception($"success: false, message: {json}");
+            
+
+            var shop = JsonConvert.DeserializeObject<ShopResponseModel>(json);
+
+            return shop!;
 
         }
     }

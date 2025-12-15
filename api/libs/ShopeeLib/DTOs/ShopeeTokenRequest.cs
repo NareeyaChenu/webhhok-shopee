@@ -2,7 +2,7 @@
 
 using Newtonsoft.Json;
 
-namespace shopee_sv.DTOs
+namespace ShopeeLib.DTOs
 {
     public class ShopeeTokenRequest
     {

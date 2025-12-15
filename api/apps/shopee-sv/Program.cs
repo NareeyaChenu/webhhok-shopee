@@ -3,6 +3,7 @@ using MySqlConnector;
 using Newtonsoft.Json.Serialization;
 using shopee_sv.DBContext;
 using shopee_sv.Interfaces;
+using shopee_sv.Repositories;
 using shopee_sv.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,7 +51,6 @@ builder.Services.AddCors(options =>
 // 1. Read base connection string (without database)
 string baseConn = builder.Configuration.GetConnectionString("MariaDb")!;
 
-Console.WriteLine(baseConn);
 
 // 2. Define database name
 string dbName = "ShopeeDB";
@@ -76,7 +76,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(finalConn, ServerVersion.AutoDetect(finalConn));
 });
 
+
+
+
+//-----------------------------DI-------------------------------------
 builder.Services.AddScoped<IForwardRequest , ForwardRequest>();
+builder.Services.AddScoped<IAuthorizeService , AuthorizeService>();
+builder.Services.AddScoped<IShopRepository , ShopRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
